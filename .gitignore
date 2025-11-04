@@ -1,0 +1,73 @@
+# =========================
+# 🌐 FRONTEND (Next.js)
+# =========================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.pnp
+frontend/.vercel
+frontend/.env*
+frontend/.DS_Store
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+frontend/.vscode/
+frontend/.idea/
+
+# =========================
+# ⚙️ BACKEND (Spring Boot / Java)
+# =========================
+backend/target/
+backend/build/
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/.idea/
+backend/.vscode/
+backend/.apt_generated
+backend/.factorypath
+backend/.sts4-cache
+backend/.nb-gradle/
+backend/nbproject/private/
+backend/nbbuild/
+backend/dist/
+backend/nbdist/
+backend/.DS_Store
+
+# Allow Maven wrapper jar
+!backend/.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# =========================
+# 🧠 IDEs (Common)
+# =========================
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# =========================
+# 🧹 OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# 🔐 Environment Files
+# =========================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# =========================
+# ⚡ Logs
+# =========================
+*.log
