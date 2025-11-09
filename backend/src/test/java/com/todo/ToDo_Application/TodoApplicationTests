@@ -1,0 +1,14 @@
+package com.todo.backend; // main class-ஐ follow செய்யும் package
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest(classes = TodoApplication.class) // main class explicitly specify செய்தோம்
+class TodoApplicationTests {
+
+    @Test
+    void contextLoads() {
+        // context load ஆனா test pass ஆகும்
+    }
+
+}

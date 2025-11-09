@@ -2,86 +2,90 @@ package com.todo.backend.controller;
 
 import com.todo.backend.model.Todo;
 import com.todo.backend.model.User;
+import com.todo.backend.repository.UserRepository;
+import com.todo.backend.security.JwtUtil;
 import com.todo.backend.service.TodoService;
-import com.todo.backend.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
+@CrossOrigin(origins = "http://localhost:3000") // ✅ Frontend URL allow பண்ணும்
 @RestController
 @RequestMapping("/api/todos")
-@CrossOrigin(origins = "*")
 public class TodoController {
 
     private final TodoService todoService;
-    private final UserService userService;
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
-    public TodoController(TodoService todoService, UserService userService) {
+    public TodoController(TodoService todoService, JwtUtil jwtUtil, UserRepository userRepository) {
         this.todoService = todoService;
-        this.userService = userService;
+        this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
     }
 
+    // ✅ Extract user from token
+    private User getUserFromToken(String token) {
+        String email = jwtUtil.extractUsername(token);
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // ✅ Get all todos for the logged-in user
     @GetMapping
-    public List<Todo> getAllTodos() {
-        return todoService.getAll();
+    public List<Todo> getTodos(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7); // Remove "Bearer "
+        User user = getUserFromToken(token);
+        return todoService.getTodos(user);
     }
 
-    @GetMapping("/user/{userId}")
-    public List<Todo> getTodosByUser(@PathVariable Long userId) {
-        return todoService.getByUser(userId);
-    }
-
-    @GetMapping("/{id}")
-    public Optional<Todo> getTodoById(@PathVariable Long id) {
-        return todoService.getById(id);
-    }
-
-    // Create expects JSON: { "title": "...", "description": "...", "status": "pending", "userId": 1 }
+    // ✅ Create new todo
     @PostMapping
-    public Todo createTodo(@RequestBody TodoRequest request) {
-        User user = userService.getById(request.getUserId());
-        if (user == null) throw new IllegalArgumentException("User not found with id: " + request.getUserId());
-
-        Todo todo = new Todo();
+    public ResponseEntity<Todo> createTodo(@RequestHeader("Authorization") String authHeader,
+                                           @RequestBody Todo todo) {
+        String token = authHeader.substring(7);
+        User user = getUserFromToken(token);
         todo.setUser(user);
-        todo.setTitle(request.getTitle());
-        todo.setDescription(request.getDescription());
-        if (request.getStatus() != null) todo.setStatus(request.getStatus());
-        return todoService.save(todo);
+        return ResponseEntity.ok(todoService.createTodo(todo));
     }
 
+    // ✅ Update todo (only if it belongs to the user)
     @PutMapping("/{id}")
-    public Todo updateTodo(@PathVariable Long id, @RequestBody TodoRequest request) {
-        Optional<Todo> opt = todoService.getById(id);
-        if (opt.isEmpty()) throw new IllegalArgumentException("Todo not found with id: " + id);
-        Todo todo = opt.get();
-        if (request.getTitle() != null) todo.setTitle(request.getTitle());
-        todo.setDescription(request.getDescription());
-        if (request.getStatus() != null) todo.setStatus(request.getStatus());
-        return todoService.save(todo);
+    public ResponseEntity<?> updateTodo(@RequestHeader("Authorization") String authHeader,
+                                        @PathVariable Long id,
+                                        @RequestBody Todo todoDetails) {
+        String token = authHeader.substring(7);
+        User user = getUserFromToken(token);
+
+        return todoService.getTodoById(id)
+                .map(todo -> {
+                    if (!todo.getUser().getId().equals(user.getId())) {
+                        return ResponseEntity.status(403).body("Forbidden");
+                    }
+                    todo.setTitle(todoDetails.getTitle());
+                    todo.setDescription(todoDetails.getDescription());
+                    todo.setCompleted(todoDetails.isCompleted());
+                    return ResponseEntity.ok(todoService.createTodo(todo));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
+    // ✅ Delete todo (only if it belongs to the user)
     @DeleteMapping("/{id}")
-    public void deleteTodo(@PathVariable Long id) {
-        todoService.delete(id);
-    }
+    public ResponseEntity<?> deleteTodo(@RequestHeader("Authorization") String authHeader,
+                                        @PathVariable Long id) {
+        String token = authHeader.substring(7);
+        User user = getUserFromToken(token);
 
-    // Simple inner static DTO
-    public static class TodoRequest {
-        private Long userId;
-        private String title;
-        private String description;
-        private String status;
-
-        // getters & setters
-        public Long getUserId() { return userId; }
-        public void setUserId(Long userId) { this.userId = userId; }
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
+        return todoService.getTodoById(id)
+                .map(todo -> {
+                    if (!todo.getUser().getId().equals(user.getId())) {
+                        return ResponseEntity.status(403).body("Forbidden");
+                    }
+                    todoService.deleteTodo(todo);
+                    return ResponseEntity.ok("Deleted successfully");
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }
