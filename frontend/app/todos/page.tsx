@@ -1,10 +1,11 @@
+// app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlusIcon, PencilIcon, TrashIcon, CheckIcon, XMarkIcon, Squares2X2Icon, Bars3Icon } from "@heroicons/react/24/outline";
-import { motion } from "framer-motion";
+import { PlusIcon, PencilIcon, TrashIcon, CheckIcon, XMarkIcon, Squares2X2Icon, Bars3Icon, ArchiveBoxIcon, ListBulletIcon, BookmarkIcon } from "@heroicons/react/24/outline";
+import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
-import api from "@/lib/api";
+import api from "@/lib/api"; // Ensure this path is correct for your project
 
 interface Subtask {
   id: string;
@@ -22,6 +23,31 @@ interface Todo {
   subtasks?: Subtask[];
   status?: "todo" | "inprogress" | "completed";
 }
+
+// Custom Checkbox Component for better styling
+const CustomCheckbox = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
+  <div
+    className={`w-5 h-5 flex items-center justify-center rounded-md border-2 cursor-pointer transition-all duration-200
+      ${checked ? "bg-indigo-600 border-indigo-600" : "bg-gray-300 border-gray-300 hover:border-indigo-400"}`}
+    onClick={onChange}
+  >
+    {checked && <CheckIcon className="h-4 w-4 text-white" />}
+  </div>
+);
+
+// Priority Tag Component
+const PriorityTag = ({ priority }: { priority: "low" | "medium" | "high" }) => {
+  const colors = {
+    high: "bg-red-500",
+    medium: "bg-amber-500",
+    low: "bg-green-500",
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-white text-xs font-semibold ${colors[priority]} flex-shrink-0`}>
+      {priority.toUpperCase()}
+    </span>
+  );
+};
 
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -109,7 +135,10 @@ export default function TodosPage() {
 
   // Save Task
   const handleSaveTask = async () => {
-    if (!title.trim()) return setError("Task title cannot be empty.");
+    if (!title.trim()) {
+      setError("Task title cannot be empty.");
+      return;
+    }
 
     try {
       if (modalMode === "create") {
@@ -119,6 +148,7 @@ export default function TodosPage() {
       }
       setIsModalOpen(false);
       fetchTodos();
+      setError(null); // Clear error on successful save
     } catch (err) {
       console.error(err);
       setError("Failed to save task.");
@@ -132,265 +162,330 @@ export default function TodosPage() {
       setIsDeleteModalOpen(false);
       setTodoToDeleteId(null);
       fetchTodos();
+      setError(null); // Clear error on successful delete
     } catch (err) {
       console.error(err);
       setError("Failed to delete task.");
     }
   };
 
-  // Toggle Complete
+  // Toggle Complete & Status Update
   const handleToggleComplete = async (todo: Todo) => {
     try {
-      const newStatus = todo.completed ? "todo" : "completed";
-      await api.put(`/todos/${todo.id}`, { ...todo, completed: !todo.completed, status: newStatus });
+      const newCompleted = !todo.completed;
+      const newStatus = newCompleted ? "completed" : "todo";
+      await api.put(`/todos/${todo.id}`, { ...todo, completed: newCompleted, status: newStatus });
       fetchTodos();
+      setError(null);
     } catch (err) {
       console.error(err);
       setError("Failed to update task.");
     }
   };
 
-  const priorityColor = (priority?: string) => {
-    switch (priority) {
-      case "high": return "bg-red-500";
-      case "medium": return "bg-yellow-400";
-      case "low": return "bg-green-400";
-      default: return "bg-gray-400";
+  const filteredTodos = todos.filter(todo => filter === "all" ? true : todo.status === filter);
+
+  const getFilterIcon = (f: string) => {
+    switch (f) {
+      case "all": return <ListBulletIcon className="h-5 w-5" />;
+      case "todo": return <BookmarkIcon className="h-5 w-5" />;
+      case "inprogress": return <ArchiveBoxIcon className="h-5 w-5" />;
+      case "completed": return <CheckIcon className="h-5 w-5" />;
+      default: return <ListBulletIcon className="h-5 w-5" />;
     }
   };
 
-  const filteredTodos = todos.filter(todo => filter === "all" ? true : todo.status === filter);
-
   return (
-    <div className="flex h-screen w-full bg-sky-50 overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-56 bg-white border-r border-gray-200 flex flex-col gap-6 p-4 shrink-0">
-        <h1 className="text-2xl font-bold text-sky-800">Tasks Panel</h1>
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => setFilter("all")}
-            className={`py-2 px-4 rounded-xl ${filter === "all" ? "bg-sky-600 text-white" : "bg-sky-100 text-gray-700"}`}
-          >All</button>
-          <button
-            onClick={() => setFilter("todo")}
-            className={`py-2 px-4 rounded-xl ${filter === "todo" ? "bg-sky-600 text-white" : "bg-sky-100 text-gray-700"}`}
-          >Todo</button>
-          <button
-            onClick={() => setFilter("inprogress")}
-            className={`py-2 px-4 rounded-xl ${filter === "inprogress" ? "bg-sky-600 text-white" : "bg-sky-100 text-gray-700"}`}
-          >In Progress</button>
-          <button
-            onClick={() => setFilter("completed")}
-            className={`py-2 px-4 rounded-xl ${filter === "completed" ? "bg-sky-600 text-white" : "bg-sky-100 text-gray-700"}`}
-          >Completed</button>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="flex-1 flex flex-col p-6 overflow-y-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-extrabold text-sky-900">My Todos</h2>
-          <div className="flex gap-2 items-center">
-            <button onClick={() => setViewMode(viewMode === "list" ? "grid" : "list")}
-              className="p-2 rounded-lg bg-sky-100 hover:bg-sky-200 transition">
-              {viewMode === "list" ? <Squares2X2Icon className="h-5 w-5 text-sky-700" /> : <Bars3Icon className="h-5 w-5 text-sky-700" />}
-            </button>
-            <button onClick={openCreateModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-sky-600 to-blue-500 text-white font-semibold shadow-lg hover:scale-105 transition-transform">
-              <PlusIcon className="h-5 w-5" /> New Task
-            </button>
+    <div className="flex flex-col h-screen w-full bg-gray-50 text-gray-900 font-sans antialiased overflow-hidden">
+      {/* Top Header Bar */}
+      <header className="flex items-center justify-between p-6 bg-white border-b border-gray-100 shadow-sm z-20 shrink-0">
+        <div className="flex items-center gap-6">
+          <h1 className="text-3xl font-extrabold text-indigo-800 tracking-tight">Taskify.</h1>
+          {/* Filter Buttons in Header */}
+          <div className="flex gap-2 bg-gray-100 rounded-xl p-1">
+            {["all", "todo", "inprogress", "completed"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f as any)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                  ${filter === f ? "bg-indigo-600 text-white shadow-md" : "text-gray-700 hover:bg-white"}`}
+              >
+                {getFilterIcon(f)}
+                <span className="capitalize">{f === "inprogress" ? "In Progress" : f}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Task Grid/List */}
-        <div className={`${viewMode === "grid" ? "grid grid-cols-3 gap-4" : "flex flex-col gap-4"}`}>
-          {filteredTodos.map(todo => {
-            const completedSubtasks = todo.subtasks?.filter(s => s.completed).length || 0;
-            const totalSubtasks = todo.subtasks?.length || 0;
-            const subtaskProgress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
+        {/* Right side of header */}
+        <div className="flex gap-4 items-center">
+          {/* View Mode Toggle */}
+          <button onClick={() => setViewMode(viewMode === "list" ? "grid" : "list")}
+            className="p-3 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-200 shadow-sm">
+            {viewMode === "list" ? <Squares2X2Icon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+          </button>
+          {/* Add New Task Button */}
+          <button onClick={openCreateModal}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200">
+            <PlusIcon className="h-6 w-6" /> Add Task
+          </button>
+        </div>
+      </header>
 
-            return (
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col p-8 overflow-y-auto">
+        {/* Error Display */}
+        <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6"
+            role="alert"
+          >
+            <strong className="font-bold">Error!</strong>
+            <span className="block sm:inline ml-2">{error}</span>
+            <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
+              <XMarkIcon className="h-5 w-5 cursor-pointer" onClick={() => setError(null)} />
+            </span>
+          </motion.div>
+        )}
+        </AnimatePresence>
+
+        {/* Task Grid/List */}
+        <AnimatePresence>
+          <div className={`${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-4"}`}>
+            {filteredTodos.length === 0 && (
               <motion.div
-                key={todo.id}
-                layout
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="relative bg-white rounded-3xl p-5 shadow-md border border-sky-100 cursor-pointer flex justify-between"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="col-span-full text-center py-12 text-gray-500 text-xl"
               >
-                {/* Left: Task Info */}
-                <div className="flex-1 pr-4">
-                  <h3 className={`text-lg font-semibold ${todo.completed ? "line-through text-gray-400 opacity-70" : "text-gray-800"}`}>{todo.title}</h3>
-                  {todo.description && <p className={`text-sm mt-1 ${todo.completed ? "text-gray-300" : "text-gray-500"}`}>{todo.description}</p>}
-                  {todo.subtasks && todo.subtasks.length > 0 && (
-                    <div className="mt-3">
+                No tasks found for this filter. Start by adding a new task!
+              </motion.div>
+            )}
+            {filteredTodos.map(todo => {
+              const completedSubtasks = todo.subtasks?.filter(s => s.completed).length || 0;
+              const totalSubtasks = todo.subtasks?.length || 0;
+              const subtaskProgress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
+
+              return (
+                <motion.div
+                  key={todo.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 20px rgba(0,0,0,0.08)" }}
+                  transition={{ duration: 0.2 }}
+                  className="relative bg-white rounded-xl p-6 shadow-md border border-gray-100 flex flex-col justify-between hover:border-indigo-200 transition-all duration-200"
+                >
+                  {/* Task Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <CustomCheckbox checked={todo.completed} onChange={() => handleToggleComplete(todo)} />
+                    <PriorityTag priority={todo.priority || "medium"} />
+                  </div>
+
+                  {/* Task Info */}
+                  <div className="flex-1 mb-4">
+                    <h3 className={`text-xl font-bold ${todo.completed ? "line-through text-gray-400 opacity-80" : "text-gray-800"}`}>
+                      {todo.title}
+                    </h3>
+                    {todo.description && (
+                      <p className={`text-sm mt-2 ${todo.completed ? "text-gray-400" : "text-gray-600"} line-clamp-2`}>
+                        {todo.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Subtask Progress */}
+                  {totalSubtasks > 0 && (
+                    <div className="mt-4 mb-4">
                       <div className="flex justify-between text-xs text-gray-500 mb-1">
                         <span>Subtasks</span>
                         <span>{completedSubtasks}/{totalSubtasks}</span>
                       </div>
                       <div className="w-full bg-gray-200 h-2 rounded-full">
                         <motion.div
-                          className="h-2 rounded-full bg-sky-500"
+                          className="h-2 rounded-full bg-indigo-500"
                           animate={{ width: `${subtaskProgress}%` }}
                           transition={{ duration: 0.5 }}
                         />
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Right: Actions & Meta */}
-                <div className="flex flex-col items-end gap-2">
-                  <div className={`px-3 py-1 rounded-bl-3xl text-white text-xs font-bold ${priorityColor(todo.priority)}`}>
-                    {todo.priority?.toUpperCase()}
+                  {/* Footer: Due Date and Actions */}
+                  <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                    {todo.dueDate && (
+                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {dayjs(todo.dueDate).format("DD MMM, YYYY")}
+                      </span>
+                    )}
+                    <div className="flex gap-2">
+                      <button onClick={() => openEditModal(todo)} className="p-2 hover:bg-gray-100 rounded-full transition" title="Edit">
+                        <PencilIcon className="h-5 w-5 text-indigo-600" />
+                      </button>
+                      <button onClick={() => { setTodoToDeleteId(todo.id); setIsDeleteModalOpen(true); }} className="p-2 hover:bg-red-100 rounded-full transition" title="Delete">
+                        <TrashIcon className="h-5 w-5 text-red-500" />
+                      </button>
+                    </div>
                   </div>
-                  {todo.dueDate && <span className="text-xs text-gray-400">{dayjs(todo.dueDate).format("DD MMM, YYYY")}</span>}
-                  <button onClick={() => handleToggleComplete(todo)} className="p-1 hover:bg-sky-100 rounded-full transition" title="Complete">
-                    <CheckIcon className="h-5 w-5 text-green-500" />
-                  </button>
-                  <button onClick={() => openEditModal(todo)} className="p-1 hover:bg-gray-100 rounded-full transition" title="Edit">
-                    <PencilIcon className="h-5 w-5 text-sky-600" />
-                  </button>
-                  <button onClick={() => { setTodoToDeleteId(todo.id); setIsDeleteModalOpen(true); }} className="p-1 hover:bg-red-100 rounded-full transition" title="Delete">
-                    <TrashIcon className="h-5 w-5 text-red-500" />
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </AnimatePresence>
       </main>
 
       {/* Task Modal */}
-      {isModalOpen && (
-        <Modal title={modalMode === "create" ? "New Task" : "Edit Task"} onClose={() => setIsModalOpen(false)}>
-          <input
-            type="text"
-            placeholder="Task Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full mb-3 p-3 border border-sky-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-sky-50 text-gray-900 placeholder-gray-400 transition"
-          />
-          <textarea
-            placeholder="Task Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full mb-3 p-3 border border-sky-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 resize-y bg-sky-50 text-gray-900 placeholder-gray-400 transition"
-            rows={4}
-          />
+      <AnimatePresence>
+        {isModalOpen && (
+          <Modal title={modalMode === "create" ? "New Task" : "Edit Task"} onClose={() => setIsModalOpen(false)}>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg relative mb-4 text-sm"
+                role="alert"
+              >
+                {error}
+              </motion.div>
+            )}
+            <input
+              type="text"
+              placeholder="Task Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full mb-4 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800 placeholder-gray-400 transition shadow-sm"
+            />
+            <textarea
+              placeholder="Task Description (Optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full mb-4 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y bg-white text-gray-800 placeholder-gray-400 transition shadow-sm"
+              rows={3}
+            />
 
-          {/* Subtasks */}
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-600 font-semibold">Subtasks</span>
-              <button onClick={addSubtask} className="text-sky-600 hover:underline text-sm flex items-center gap-1">
-                <PlusIcon className="h-4 w-4" /> Add
+            {/* Subtasks */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-gray-700 font-semibold text-lg">Subtasks</span>
+                <button onClick={addSubtask} className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center gap-1 transition">
+                  <PlusIcon className="h-5 w-5" /> Add Subtask
+                </button>
+              </div>
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                {subtasks.length === 0 && <p className="text-gray-500 text-sm">No subtasks yet. Click "Add Subtask" to get started.</p>}
+                {subtasks.map(sub => (
+                  <div key={sub.id} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                    <CustomCheckbox checked={sub.completed} onChange={() => toggleSubtaskComplete(sub.id)} />
+                    <input
+                      type="text"
+                      value={sub.title}
+                      onChange={(e) => updateSubtask(sub.id, e.target.value)}
+                      placeholder="Subtask title"
+                      className={`flex-1 p-2 border-0 focus:outline-none rounded-md bg-transparent ${sub.completed ? "line-through text-gray-500" : "text-gray-800"}`}
+                    />
+                    <button onClick={() => deleteSubtask(sub.id)} className="p-1 hover:bg-red-100 rounded-full transition">
+                      <TrashIcon className="h-5 w-5 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1">
+                <label className="text-gray-700 text-sm font-medium mb-1 block">Priority</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as any)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800 shadow-sm transition"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="text-gray-700 text-sm font-medium mb-1 block">Due Date</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800 shadow-sm transition"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={handleSaveTask}
+                disabled={!title.trim()}
+                className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-blue-500 text-white font-semibold rounded-xl hover:scale-105 transition-transform duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
+              >
+                {modalMode === "create" ? "Add Task" : "Update Task"}
+              </button>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="flex-1 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition-colors duration-200"
+              >
+                Cancel
               </button>
             </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {subtasks.map(sub => (
-                <div key={sub.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={sub.completed}
-                    onChange={() => toggleSubtaskComplete(sub.id)}
-                    className="w-4 h-4 text-sky-600 rounded focus:ring-sky-400"
-                  />
-                  <input
-                    type="text"
-                    value={sub.title}
-                    onChange={(e) => updateSubtask(sub.id, e.target.value)}
-                    placeholder="Subtask title"
-                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 bg-sky-50"
-                  />
-                  <button onClick={() => deleteSubtask(sub.id)} className="p-1 hover:bg-red-100 rounded-full transition">
-                    <TrashIcon className="h-4 w-4 text-red-500" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          </Modal>
+        )}
+      </AnimatePresence>
 
-          <div className="flex gap-3 mb-3">
-            <div className="flex-1">
-              <label className="text-gray-600 text-sm mb-1 block">Priority</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full p-2 border border-sky-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-sky-50"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="text-gray-600 text-sm mb-1 block">Due Date</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full p-2 border border-sky-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-sky-50"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleSaveTask}
-              disabled={!title.trim()}
-              className="flex-1 py-3 bg-gradient-to-r from-sky-600 to-blue-500 text-white font-semibold rounded-2xl hover:scale-105 transition-transform disabled:bg-gray-400"
-            >
-              {modalMode === "create" ? "Add Task" : "Update Task"}
-            </button>
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-2xl hover:bg-gray-200 transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </Modal>
-      )}
 
       {/* Delete Modal */}
-      {isDeleteModalOpen && todoToDeleteId && (
-        <Modal title="Confirm Deletion" onClose={() => setIsDeleteModalOpen(false)}>
-          <p className="text-gray-700 mb-6">
-            Are you sure you want to delete this task? This action cannot be undone.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleDeleteTask(todoToDeleteId)}
-              className="flex-1 py-3 bg-red-500 text-white font-semibold rounded-2xl hover:bg-red-600 transition"
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-2xl hover:bg-gray-200 transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </Modal>
-      )}
+      <AnimatePresence>
+        {isDeleteModalOpen && todoToDeleteId && (
+          <Modal title="Confirm Deletion" onClose={() => setIsDeleteModalOpen(false)}>
+            <p className="text-gray-700 mb-6 text-center text-lg">
+              Are you sure you want to delete this task? This action cannot be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleDeleteTask(todoToDeleteId)}
+                className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors duration-200 shadow-md"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Modal Component
+// Modal Component (Enhanced with Framer Motion)
 const Modal = ({ children, title, onClose }: { children: React.ReactNode; title: string; onClose: () => void }) => (
-  <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-50">
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
     <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transition transform"
+      initial={{ scale: 0.85, opacity: 0, y: 50 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      exit={{ scale: 0.85, opacity: 0, y: 50 }}
+      transition={{ type: "spring", damping: 20, stiffness: 300 }}
+      className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg transition transform border border-gray-100"
     >
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-sky-800">{title}</h2>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition">
-          <XMarkIcon className="h-5 w-5 text-gray-600" />
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold text-indigo-800">{title}</h2>
+        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all duration-200">
+          <XMarkIcon className="h-6 w-6 text-gray-500" />
         </button>
       </div>
       {children}
