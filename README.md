@@ -1,188 +1,241 @@
-📌 To-Do Application
-Backend: Spring Boot | Frontend: Next.js | Database: PostgreSQL
+# 📝 To-Do Application
 
-A full-stack To-Do management application built with Spring Boot REST API, Next.js frontend, and PostgreSQL as the database.
-This app allows users to add, update, delete, and view tasks with a modern UI.
+**Backend:** Spring Boot | **Frontend:** Next.js | **Database:** PostgreSQL
 
-🚀 Features
-✅ Frontend (Next.js)
+A modern full-stack **To-Do Management System** built with clean architecture, reusable components, and secure REST API communication.
 
-Modern UI using Tailwind CSS
+---
 
-Sidebar + Header layout
+# 🚀 Features
 
-Add / Edit / Delete tasks
+### 🌐 Frontend (Next.js + Tailwind CSS)
 
-API communication with Spring Boot backend
+* Responsive, professional UI with Header + Sidebar layout
+* Create, Update, Delete tasks
+* API service layer with Axios + JWT interceptor
+* Notifications, modals, and user dropdowns
+* Client-side validation & error handling
 
-Dark & Light mode
+### 🛠 Backend (Spring Boot)
 
-Optimized file structure
+* REST API with Controller → Service → Repository layers
+* DTO-based payloads for clean data transfer
+* Exception handling & global error responses
+* JWT-based authentication and authorization
+* PostgreSQL + Spring Data JPA integration
+* CORS configured for frontend access
 
-Notification + Search UI buttons
+### 🗄 Database (PostgreSQL)
 
-🛠 Backend (Spring Boot)
+* Optimized schema for tasks and users
+* Auto-increment IDs for todos
+* Supports easy migrations and seeding
 
-REST API for task operations
+---
 
-Service + Repository layered architecture
+# 🧱 Tech Stack
 
-DTO-based request/response handling
+| Layer        | Technologies                                |
+| ------------ | ------------------------------------------- |
+| **Frontend** | Next.js 14, React, Tailwind CSS, Heroicons  |
+| **Backend**  | Spring Boot 3, Spring Data JPA, Lombok, JWT |
+| **Database** | PostgreSQL                                  |
+| **Tools**    | Maven, npm, Postman                         |
 
-Validation for input data
+---
 
-CORS enabled for Next.js frontend
+# 🔌 API Endpoints
 
-PostgreSQL database connection
+| Method | Endpoint             | Description                       |
+| ------ | -------------------- | --------------------------------- |
+| POST   | `/api/auth/register` | Register new user                 |
+| POST   | `/api/auth/login`    | Login and receive JWT             |
+| GET    | `/api/tasks`         | Fetch all tasks of logged-in user |
+| POST   | `/api/tasks`         | Create a new task                 |
+| GET    | `/api/tasks/{id}`    | Get task by ID                    |
+| PUT    | `/api/tasks/{id}`    | Update task                       |
+| DELETE | `/api/tasks/{id}`    | Delete task                       |
 
-🗄 Database (PostgreSQL)
+**Headers for protected routes:**
 
-Stores all To-Do tasks
+```
+Authorization: Bearer <JWT_TOKEN>
+```
 
-Auto-increment task IDs
+---
 
-Supports CRUD operations
+# ⚙ Backend Setup (Spring Boot)
 
-📁 Project Structure
-Frontend (Next.js)
-/app
- ├── layout.tsx
- ├── page.tsx
- └── todos/
-      ├── layout.tsx
-      ├── page.tsx
-/components
- ├── Sidebar.tsx
- ├── Header.tsx
- └── TaskForm.tsx
-/lib
- └── api.ts
+### 1️⃣ Clone the repository
 
-Backend (Spring Boot)
-src/main/java/com/todo
- ├── controller/
- ├── service/
- ├── repository/
- ├── dto/
- ├── entity/
- └── exception/
+```bash
+git clone https://github.com/Kiruthiyan/ToDo_Application.git
+cd ToDo_Application/backend
+```
 
-🧩 API Endpoints (Spring Boot)
-Method	Endpoint	Description
-GET	/api/tasks	Get all tasks
-POST	/api/tasks	Create a new task
-GET	/api/tasks/{id}	Get task by ID
-PUT	/api/tasks/{id}	Update a task
-DELETE	/api/tasks/{id}	Delete a task
-🛠 Installation Guide
-1️⃣ Backend Setup (Spring Boot)
-✔ Prerequisites
+### 2️⃣ Create PostgreSQL database
 
-Java 17+
-
-Maven
-
-PostgreSQL installed
-
-✔ Database Setup
+```sql
 CREATE DATABASE todo_db;
 
-✔ Update application.properties
+CREATE USER todo_user WITH ENCRYPTED PASSWORD 'StrongPassword123';
+GRANT ALL PRIVILEGES ON DATABASE todo_db TO todo_user;
+```
+
+### 3️⃣ Configure `application.properties`
+
+```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/todo_db
-spring.datasource.username=postgres
-spring.datasource.password=your_password
+spring.datasource.username=todo_user
+spring.datasource.password=StrongPassword123
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
 
-✔ Run the backend
+jwt.secret=YourVerySecretKeyHere
+jwt.expiration=3600000
+```
+
+### 4️⃣ Run the backend
+
+```bash
 mvn clean install
 mvn spring-boot:run
+```
 
+Backend available at: **[http://localhost:8080](http://localhost:8080)**
 
-Backend runs on:
-👉 http://localhost:8080
+---
 
-2️⃣ Frontend Setup (Next.js)
-✔ Install dependencies
+# 🖥 Frontend Setup (Next.js)
+
+### 1️⃣ Open frontend folder
+
+```bash
+cd ../frontend
+```
+
+### 2️⃣ Install dependencies
+
+```bash
 npm install
+```
 
-✔ Run the development server
+### 3️⃣ Run frontend
+
+```bash
 npm run dev
+```
 
+Frontend available at: **[http://localhost:3000](http://localhost:3000)**
 
-Frontend runs on:
-👉 http://localhost:3000
+---
 
-🔗 API Integration (Frontend → Backend)
+# 🔗 API Integration (Next.js → Spring Boot)
 
-lib/api.ts:
+Create `/lib/api.ts`:
 
-export const API_BASE_URL = "http://localhost:8080/api";
+```ts
+import axios from "axios";
 
-export async function getTasks() {
-  const res = await fetch(`${API_BASE_URL}/tasks`);
-  return res.json();
-}
+const api = axios.create({
+  baseURL: "http://localhost:8080/api",
+});
 
-export async function addTask(data: any) {
-  const res = await fetch(`${API_BASE_URL}/tasks`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
+api.interceptors.request.use((config) => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-🧪 Testing the API
+export default api;
+```
 
-Use Postman / Thunder Client:
+### 🧪 Sample API Request (Create Task)
 
-POST → /api/tasks
-
+```json
+POST /api/tasks
 {
-  "title": "Learn Next.js",
-  "description": "Finish frontend integration",
+  "title": "Learn Backend",
+  "description": "Finish Spring Boot API",
   "status": "PENDING"
 }
+```
 
-🎨 UI Preview (Features)
+---
 
-Responsive layout
+# 🔐 Security Notes
 
-Sidebar navigation
+* **JWT Secret:** Store in environment variables, not in source code
+* **Password Hashing:** Use `BCryptPasswordEncoder`
+* **HTTPS:** Use HTTPS in production
+* **DB Migrations:** Use Flyway/Liquibase instead of `ddl-auto=update` in production
+* **Token Expiry:** Implement refresh tokens for long sessions
+* **CORS:** Enable only for frontend domains
 
-Task list view
+---
 
-Add new tasks (form)
+# 📦 Production Build
 
-Edit existing tasks
+### Frontend
 
-Delete tasks
+```bash
+npm run build
+npm run start
+```
 
-📦 Technologies Used
-⭐ Frontend
+### Backend
 
-Next.js 14 App Router
+```bash
+mvn clean package
+java -jar target/backend-0.0.1-SNAPSHOT.jar
+```
 
-Tailwind CSS
+---
 
-Heroicons
+# ✅ Quick Checklist for Developers
 
-⭐ Backend
+* [ ] PostgreSQL `todo_db` created
+* [ ] Backend running at `http://localhost:8080`
+* [ ] Frontend running at `http://localhost:3000`
+* [ ] Register & Login → JWT stored in `localStorage`
+* [ ] Create / Update / Delete tasks → check DB or API response
+* [ ] Ensure CORS enabled for frontend
 
-Spring Boot 3
+---
 
-Spring Web
+# 🧩 Useful Commands
 
-Spring Data JPA
+```bash
+# Backend
+mvn clean install       # Build project
+mvn spring-boot:run     # Run backend
+mvn clean package       # Package for production
 
-Lombok
+# Frontend
+npm install             # Install dependencies
+npm run dev             # Start development server
+npm run build           # Build for production
+npm run start           # Run production build
 
-⭐ Database
+# PostgreSQL
+psql -U todo_user -d todo_db   # Connect to DB
+\dt                            # List tables
+SELECT * FROM tasks;           # View tasks
+```
 
-PostgreSQL
+---
 
-📜 License
+# 👨‍💻 Developer
 
-This project is open-source and free to use.
+**Your Name Here**
+Full-stack To-Do Application — 2025
+
+---
+
+# 📜 License
+
+This project is free and open source.
+
+---
