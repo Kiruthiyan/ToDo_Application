@@ -6,12 +6,12 @@ A modern full-stack **To-Do Management System** built with clean architecture, r
 
 ---
 
-# 📌 About the Project
+## 📌 About the Project
 
 This To-Do Application is a simple, fast, and secure task management system built using Spring Boot, Next.js, and PostgreSQL. It includes user authentication, a clean UI, and full CRUD operations for tasks — making it an ideal project for developers learning full-stack application development.
 
 ---
-# 🚀 Features
+## 🚀 Features
 
 ### 🌐 Frontend (Next.js + Tailwind CSS)
 
@@ -38,7 +38,7 @@ This To-Do Application is a simple, fast, and secure task management system buil
 
 ---
 
-# 🧱 Tech Stack
+## 🧱 Tech Stack
 
 | Layer        | Technologies                                |
 | ------------ | ------------------------------------------- |
@@ -49,7 +49,7 @@ This To-Do Application is a simple, fast, and secure task management system buil
 
 ---
 
-# 🔌 API Endpoints
+## 🔌 API Endpoints
 
 | Method | Endpoint             | Description                       |
 | ------ | -------------------- | --------------------------------- |
@@ -69,7 +69,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 ---
 
-# ⚙ Backend Setup (Spring Boot)
+## ⚙ Backend Setup (Spring Boot)
 
 ### 1️⃣ Clone the repository
 
@@ -113,7 +113,7 @@ Backend available at: **[http://localhost:8080](http://localhost:8080)**
 
 ---
 
-# 🖥 Frontend Setup (Next.js)
+## 🖥 Frontend Setup (Next.js)
 
 ### 1️⃣ Open frontend folder
 
@@ -137,7 +137,7 @@ Frontend available at: **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
-# 🔗 API Integration (Next.js → Spring Boot)
+## 🔗 API Integration (Next.js → Spring Boot)
 
 Create `/lib/api.ts`:
 
@@ -170,7 +170,7 @@ POST /api/tasks
 
 ---
 
-# 🔐 Security Notes
+## 🔐 Security Notes
 
 * **JWT Secret:** Store in environment variables, not in source code
 * **Password Hashing:** Use `BCryptPasswordEncoder`
@@ -181,7 +181,7 @@ POST /api/tasks
 
 ---
 
-# 📦 Production Build
+## 📦 Production Build
 
 ### Frontend
 
@@ -199,7 +199,7 @@ java -jar target/backend-0.0.1-SNAPSHOT.jar
 
 ---
 
-# ✅ Quick Checklist for Developers
+## ✅ Quick Checklist for Developers
 
 * [ ] PostgreSQL `todo_db` created
 * [ ] Backend running at `http://localhost:8080`
@@ -210,7 +210,7 @@ java -jar target/backend-0.0.1-SNAPSHOT.jar
 
 ---
 
-# 🧩 Useful Commands
+## 🧩 Useful Commands
 
 ```bash
 # Backend
@@ -232,14 +232,14 @@ SELECT * FROM tasks;           # View tasks
 
 ---
 
-# 👨‍💻 Developer
+## 👨‍💻 Developer
 
 **Your Name Here**
 Full-stack To-Do Application — 2025
 
 ---
 
-# 📜 License
+## 📜 License
 
 This project is free and open source.
 
