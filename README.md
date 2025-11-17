@@ -37,7 +37,7 @@ A modern full-stack **To-Do Management System** built with clean architecture, r
 
 | Layer        | Technologies                                |
 | ------------ | ------------------------------------------- |
-| **Frontend** | Next.js 14, React, Tailwind CSS, Heroicons  |
+| **Frontend** | Next.js 14, React, Tailwind CSS             |
 | **Backend**  | Spring Boot 3, Spring Data JPA, Lombok, JWT |
 | **Database** | PostgreSQL                                  |
 | **Tools**    | Maven, npm, Postman                         |
