@@ -6,6 +6,11 @@ A modern full-stack **To-Do Management System** built with clean architecture, r
 
 ---
 
+# 📌 About the Project
+
+This To-Do Application is a simple, fast, and secure task management system built using Spring Boot, Next.js, and PostgreSQL. It includes user authentication, a clean UI, and full CRUD operations for tasks — making it an ideal project for developers learning full-stack application development.
+
+---
 # 🚀 Features
 
 ### 🌐 Frontend (Next.js + Tailwind CSS)
