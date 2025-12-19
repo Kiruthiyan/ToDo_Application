@@ -232,15 +232,3 @@ SELECT * FROM tasks;           # View tasks
 
 ---
 
-## 👨‍💻 Developer
-
-**Your Name Here**
-Full-stack To-Do Application — 2025
-
----
-
-## 📜 License
-
-This project is free and open source.
-
----
